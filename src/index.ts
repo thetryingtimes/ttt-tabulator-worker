@@ -1,3 +1,5 @@
+import { FathomClient } from './FathomClient';
+
 // message sent to the queue
 type VoteMessage = {
   article_external_id: string;
@@ -25,9 +27,15 @@ type CachedArticle = {
   };
 };
 
+type SiteStats = {
+  total_votes: number;
+  daily_readers: number;
+};
+
 export default {
   async queue(batch: MessageBatch<VoteMessage>, env: Env) {
     const votes_by_article_id: VotesByArticleId = {};
+    let new_votes = 0;
 
     for (const message of batch.messages) {
       const article_external_id = message.body.article_external_id;
@@ -35,11 +43,15 @@ export default {
       if (!votes_by_article_id[article_external_id])
         votes_by_article_id[article_external_id] = { support: 0, oppose: 0 };
 
-      if (message.body.support)
+      if (message.body.support) {
         votes_by_article_id[article_external_id].support += 1;
+        new_votes += 1;
+      }
 
-      if (message.body.oppose)
+      if (message.body.oppose) {
         votes_by_article_id[article_external_id].oppose += 1;
+        new_votes += 1;
+      }
     }
 
     for (const article_external_id of Object.keys(votes_by_article_id)) {
@@ -54,6 +66,34 @@ export default {
 
         await env.ARTICLES.put(key, JSON.stringify(cached_article));
       }
+    }
+
+    // add the new votes to the total
+    const stats = await env.ARTICLES.get<SiteStats>('stats', 'json');
+
+    if (!stats) {
+      await env.ARTICLES.put(
+        'stats',
+        JSON.stringify({
+          daily_readers: 0,
+          total_votes: new_votes,
+        } as SiteStats),
+      );
+    } else {
+      stats.total_votes += new_votes;
+
+      await env.ARTICLES.put('stats', JSON.stringify(stats));
+    }
+  },
+
+  async scheduled(controller: ScheduledController, env: Env) {
+    const daily_readers = await FathomClient.getDailyReaders(env);
+
+    const stats = await env.ARTICLES.get<SiteStats>('stats', 'json');
+
+    if (stats) {
+      stats.daily_readers = daily_readers;
+      await env.ARTICLES.put('stats', JSON.stringify(stats));
     }
   },
 } satisfies ExportedHandler<Env, VoteMessage>;
