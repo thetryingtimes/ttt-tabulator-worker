@@ -1,16 +1,22 @@
+// message sent to the queue
 type VoteMessage = {
   article_external_id: string;
   support?: boolean;
   oppose?: boolean;
 };
 
+type ArticleExternalId = string;
+
+// groups all of the messages by article ID
+// support/oppose are added to the cached article's votes
 type VotesByArticleId = {
-  [key: string]: {
+  [key: ArticleExternalId]: {
     support: number;
     oppose: number;
   };
 };
 
+// the actual cached article, we only care about the `votes` key
 type CachedArticle = {
   article: any;
   votes: {
