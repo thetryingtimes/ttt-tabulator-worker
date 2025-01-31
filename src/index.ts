@@ -91,7 +91,15 @@ export default {
 
     const stats = await env.ARTICLES.get<SiteStats>('stats', 'json');
 
-    if (stats) {
+    if (!stats) {
+      await env.ARTICLES.put(
+        'stats',
+        JSON.stringify({
+          daily_readers,
+          total_votes: 0,
+        } as SiteStats),
+      );
+    } else {
       stats.daily_readers = daily_readers;
       await env.ARTICLES.put('stats', JSON.stringify(stats));
     }
