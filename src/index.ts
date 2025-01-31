@@ -1,18 +1,53 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.json`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+type VoteMessage = {
+  article_external_id: string;
+  support?: boolean;
+  oppose?: boolean;
+};
+
+type VotesByArticleId = {
+  [key: string]: {
+    support: number;
+    oppose: number;
+  };
+};
+
+type CachedArticle = {
+  article: any;
+  votes: {
+    support: number;
+    oppose: number;
+  };
+};
 
 export default {
-  async fetch(request, env, ctx): Promise<Response> {
-    return new Response('Hello World!');
+  async queue(batch: MessageBatch<VoteMessage>, env: Env) {
+    const votes_by_article_id: VotesByArticleId = {};
+
+    for (const message of batch.messages) {
+      const article_external_id = message.body.article_external_id;
+
+      if (!votes_by_article_id[article_external_id])
+        votes_by_article_id[article_external_id] = { support: 0, oppose: 0 };
+
+      if (message.body.support)
+        votes_by_article_id[article_external_id].support += 1;
+
+      if (message.body.oppose)
+        votes_by_article_id[article_external_id].oppose += 1;
+    }
+
+    for (const article_external_id of Object.keys(votes_by_article_id)) {
+      const key = `article:${article_external_id}`;
+      const cached_article = await env.ARTICLES.get<CachedArticle>(key, 'json');
+
+      if (cached_article) {
+        cached_article.votes.support +=
+          votes_by_article_id[article_external_id].support;
+        cached_article.votes.oppose +=
+          votes_by_article_id[article_external_id].oppose;
+
+        await env.ARTICLES.put(key, JSON.stringify(cached_article));
+      }
+    }
   },
-} satisfies ExportedHandler<Env>;
+} satisfies ExportedHandler<Env, VoteMessage>;
