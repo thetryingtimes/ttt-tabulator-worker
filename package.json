@@ -7,11 +7,13 @@
     "dev": "wrangler dev",
     "start": "wrangler dev",
     "test": "vitest",
+    "format": "prettier --write .",
     "cf-typegen": "wrangler types"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.6.4",
     "@cloudflare/workers-types": "^4.20250129.0",
+    "prettier": "^3.4.2",
     "typescript": "^5.5.2",
     "vitest": "2.1.8",
     "wrangler": "^3.107.0"
