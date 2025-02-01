@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ttt-tabulator-worker",
   "main": "src/index.ts",
-  "compatibility_date": "2025-01-29",
+  "compatibility_date": "2025-01-24",
   "observability": {
     "enabled": true
   },

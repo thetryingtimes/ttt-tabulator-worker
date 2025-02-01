@@ -33,6 +33,9 @@ type SiteStats = {
 };
 
 export default {
+  async fetch(request, env) {
+    return new Response((await FathomClient.getDailyReaders(env)).toString());
+  },
   async queue(batch: MessageBatch<VoteMessage>, env: Env) {
     const votes_by_article_id: VotesByArticleId = {};
     let new_votes = 0;
