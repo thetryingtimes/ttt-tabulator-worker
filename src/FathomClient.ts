@@ -10,7 +10,7 @@ const FathomResponseParser = z.array(
 export class FathomClient {
   static async getDailyReaders(env: Env) {
     const req = await fetch(
-      `https://api.usefathom.com/v1/aggregations?entity=pageview&entity_id=${env.FATHOM_ENTITY_ID}&aggregates=visits&date_grouping=day&date_from=${getTodaysDate()}&field_grouping=hostname`,
+      `https://api.usefathom.com/v1/aggregations?entity=pageview&entity_id=${env.FATHOM_ENTITY_ID}&aggregates=visits&date_grouping=day&date_from=${getTodaysDate()}&timezone=America%2FNew_York&field_grouping=hostname`,
       {
         headers: {
           Authorization: `Bearer ${env.FATHOM_API_TOKEN}`,
