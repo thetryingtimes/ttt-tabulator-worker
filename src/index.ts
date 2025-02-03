@@ -32,9 +32,28 @@ type SiteStats = {
   daily_readers: number;
 };
 
+const writeStats = async (env: Env, daily_readers: number) => {
+  const stats = await env.ARTICLES.get<SiteStats>('stats', 'json');
+
+  if (!stats) {
+    await env.ARTICLES.put(
+      'stats',
+      JSON.stringify({
+        daily_readers,
+        total_votes: 0,
+      } as SiteStats),
+    );
+  } else {
+    stats.daily_readers = daily_readers;
+    await env.ARTICLES.put('stats', JSON.stringify(stats));
+  }
+};
+
 export default {
   async fetch(request, env) {
-    return new Response((await FathomClient.getDailyReaders(env)).toString());
+    const daily_readers = await FathomClient.getDailyReaders(env);
+    await writeStats(env, daily_readers);
+    return new Response(daily_readers.toString());
   },
   async queue(batch: MessageBatch<VoteMessage>, env: Env) {
     const votes_by_article_id: VotesByArticleId = {};
@@ -91,20 +110,6 @@ export default {
 
   async scheduled(controller: ScheduledController, env: Env) {
     const daily_readers = await FathomClient.getDailyReaders(env);
-
-    const stats = await env.ARTICLES.get<SiteStats>('stats', 'json');
-
-    if (!stats) {
-      await env.ARTICLES.put(
-        'stats',
-        JSON.stringify({
-          daily_readers,
-          total_votes: 0,
-        } as SiteStats),
-      );
-    } else {
-      stats.daily_readers = daily_readers;
-      await env.ARTICLES.put('stats', JSON.stringify(stats));
-    }
+    await writeStats(env, daily_readers);
   },
 } satisfies ExportedHandler<Env, VoteMessage>;
