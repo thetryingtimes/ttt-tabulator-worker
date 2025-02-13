@@ -4,4 +4,6 @@ interface Env {
   ARTICLES: KVNamespace;
   FATHOM_API_TOKEN: string;
   FATHOM_ENTITY_ID: string;
+  SUPABASE_PROJECT_URL: string;
+  SUPABASE_PUBLIC_ANON_KEY: string;
 }
