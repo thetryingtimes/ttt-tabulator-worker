@@ -1,4 +1,5 @@
 import { FathomClient } from './FathomClient';
+import { SupabaseClient } from './SupabaseClient';
 
 // message sent to the queue
 type VoteMessage = {
@@ -24,6 +25,7 @@ type CachedArticle = {
   votes: {
     support: number;
     oppose: number;
+    shares?: number;
   };
 };
 
@@ -51,11 +53,10 @@ const writeStats = async (env: Env, daily_readers: number) => {
 
 export default {
   async fetch(request, env) {
-    const daily_readers = await FathomClient.getDailyReaders(env);
-    await writeStats(env, daily_readers);
-    return new Response(daily_readers.toString());
+    return new Response('');
   },
   async queue(batch: MessageBatch<VoteMessage>, env: Env) {
+    const supa = new SupabaseClient(env);
     const votes_by_article_id: VotesByArticleId = {};
     let new_votes = 0;
 
@@ -87,6 +88,12 @@ export default {
           votes_by_article_id[article_external_id].oppose;
 
         await env.ARTICLES.put(key, JSON.stringify(cached_article));
+        await supa.savePopularity(
+          article_external_id,
+          cached_article.votes.support +
+            cached_article.votes.oppose +
+            (cached_article.votes.shares || 0),
+        );
       }
     }
 
