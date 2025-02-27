@@ -21,8 +21,5 @@
       "id": "f0bcbaf24faf42138ab1a53597307946",
       "preview_id": "f0bcbaf24faf42138ab1a53597307946"
     }
-  ],
-  "triggers": {
-    "crons": ["*/15 * * * *"]
-  }
+  ]
 }
